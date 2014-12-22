@@ -161,6 +161,20 @@ class MarginaliaTest < MiniTest::Test
     assert_match %r{/\*line:.*lib/marginalia/comment.rb:[0-9]+}, @queries.first
   end
 
+  def test_last_line_component_rails_root
+    Marginalia::Comment.lines_to_ignore = /lib/
+    Marginalia::Comment.components = [:line]
+    PostsController.action(:driver_only).call(@env)
+    dir = File.expand_path(File.dirname(__FILE__) + "/../lib/marginalia")
+    Rails.expects(:root).returns(dir).once
+    Rails.expects(:respond_to).with(:root).returns(true).once
+
+    # Even though "lines_to_ignore" includes "marginalia", the extracted
+    # line will be from marginalia/comment.rb because "marginalia"
+    # doesn't appear outside of the rails root section of the path.
+    assert_match %r{/\*line:.*lib/marginalia/comment.rb:[0-9]+}, @queries.first
+  end
+
   def test_hostname_and_pid
     Marginalia::Comment.components = [:hostname, :pid]
     PostsController.action(:driver_only).call(@env)

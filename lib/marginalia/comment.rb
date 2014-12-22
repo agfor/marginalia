@@ -50,22 +50,23 @@ module Marginalia
 
       def self.line
         Marginalia::Comment.lines_to_ignore ||= /\.rvm|gem|vendor\/|marginalia|rbenv/
-        last_line = caller.detect do |line|
-          line !~ Marginalia::Comment.lines_to_ignore
+        root = if defined?(Rails) && Rails.respond_to?(:root)
+          Rails.root.to_s
+        elsif defined?(RAILS_ROOT)
+          RAILS_ROOT
         end
-        if last_line
-          root = if defined?(Rails) && Rails.respond_to?(:root)
-            Rails.root.to_s
-          elsif defined?(RAILS_ROOT)
-            RAILS_ROOT
-          else
-            ""
+
+        last_line = nil
+        for line in caller
+          if root && line.starts_with?(root)
+            line = line[root.length..-1]
           end
-          if last_line.starts_with? root
-            last_line = last_line[root.length..-1]
+          if line !~ Marginalia::Comment.lines_to_ignore
+            last_line = line
+            break
           end
-          last_line
         end
+        last_line
       end
 
       def self.hostname
